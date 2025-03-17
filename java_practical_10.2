@@ -1,0 +1,195 @@
+import java.util.Random;
+import java.util.Scanner;
+
+class SudokuGame {
+    private static int boardSize;
+    private static int[][] puzzleBoard;
+    private static int[][] solutionBoard;
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Enter the size of the Sudoku board (e.g. 9 for 9x9 grid): ");
+        boardSize = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.print("Enter difficulty level (Easy, Medium, Hard): ");
+        String difficultyLevel = scanner.nextLine().toLowerCase();
+
+        puzzleBoard = new int[boardSize][boardSize];
+        generateSudokuBoard(puzzleBoard, boardSize);
+        solutionBoard = duplicateBoard(puzzleBoard);
+
+        removeValuesFromBoard(puzzleBoard, boardSize, difficultyLevel);
+
+        displayBoard(puzzleBoard, boardSize);
+        getUserInput(puzzleBoard, boardSize);
+        checkSolution(puzzleBoard, boardSize);
+
+        scanner.close();
+    }
+
+    public static void generateSudokuBoard(int[][] board, int boardSize) {
+        Random random = new Random();
+        int[] numbers = new int[boardSize];
+
+       
+        for (int i = 0; i < boardSize; i++) {
+            numbers[i] = i + 1;
+        }
+        shuffleArray(numbers, random);
+        System.arraycopy(numbers, 0, board[0], 0, boardSize);
+
+        
+        solveSudoku(board, 0, 0, boardSize);
+    }
+
+    private static boolean solveSudoku(int[][] board, int row, int col, int boardSize) {
+        if (row == boardSize) {
+            return true;
+        }
+        if (col == boardSize) {
+            return solveSudoku(board, row + 1, 0, boardSize);
+        }
+        if (board[row][col] != 0) {
+            return solveSudoku(board, row, col + 1, boardSize);
+        }
+
+        Random random = new Random();
+        int[] numbers = new int[boardSize];
+        for (int i = 0; i < boardSize; i++) {
+            numbers[i] = i + 1;
+        }
+        shuffleArray(numbers, random);
+
+        for (int num : numbers) {
+            if (isValidPlacement(board, row, col, num, boardSize)) {
+                board[row][col] = num;
+                if (solveSudoku(board, row, col + 1, boardSize)) {
+                    return true;
+                }
+                board[row][col] = 0;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isValidPlacement(int[][] board, int row, int col, int num, int boardSize) {
+        for (int i = 0; i < boardSize; i++) {
+            if (board[row][i] == num || board[i][col] == num) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static void removeValuesFromBoard(int[][] board, int boardSize, String difficultyLevel) {
+        Random random = new Random();
+        int cellsToRemove;
+
+        switch (difficultyLevel) {
+            case "easy":
+                cellsToRemove = boardSize;
+                break;
+            case "medium":
+                cellsToRemove = (boardSize * boardSize) - (boardSize * boardSize / 3);
+                break;
+            case "hard":
+                cellsToRemove = (boardSize * boardSize) - 1;
+                break;
+            default:
+                cellsToRemove = (boardSize * boardSize) - (boardSize * boardSize / 3);
+        }
+
+        while (cellsToRemove > 0) {
+            int i = random.nextInt(boardSize);
+            int j = random.nextInt(boardSize);
+            if (board[i][j] != 0) {
+                board[i][j] = 0;
+                cellsToRemove--;
+            }
+        }
+    }
+
+    public static void displayBoard(int[][] board, int boardSize) {
+        int maxDigitLength = String.valueOf(boardSize).length();
+        int cellWidth = maxDigitLength + 2;
+
+        StringBuilder separator = new StringBuilder(".");
+        for (int i = 0; i < boardSize; i++) {
+            separator.append("-".repeat(cellWidth)).append(".");
+        }
+        String separatorLine = separator.toString();
+        System.out.println(separatorLine);
+
+        for (int i = 0; i < boardSize; i++) {
+            System.out.print("|");
+            for (int j = 0; j < boardSize; j++) {
+                String cellValue = (board[i][j] == 0 ? " ".repeat(maxDigitLength) : String.format("%" + maxDigitLength + "d", board[i][j]));
+                System.out.print(" " + cellValue + " |");
+            }
+            System.out.println();
+            System.out.println(separatorLine);
+        }
+    }
+
+    public static void getUserInput(int[][] board, int boardSize) {
+        Scanner scanner = new Scanner(System.in);
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+                if (board[i][j] == 0) {
+                    System.out.print("Enter value for row " + (i + 1) + ", column " + (j + 1) + ": ");
+                    board[i][j] = scanner.nextInt();
+                    displayBoard(board, boardSize);
+                }
+            }
+        }
+    }
+
+    public static void checkSolution(int[][] board, int boardSize) {
+        if (isSolutionCorrect(board, boardSize)) {
+            System.out.println("Congratulations! You've solved the Sudoku!");
+        } else {
+            System.out.println("Oops! Your solution is incorrect.");
+        }
+    }
+
+    public static boolean isSolutionCorrect(int[][] board, int boardSize) {
+        for (int i = 0; i < boardSize; i++) {
+            boolean[] rowCheck = new boolean[boardSize + 1];
+            boolean[] colCheck = new boolean[boardSize + 1];
+
+            for (int j = 0; j < boardSize; j++) {
+                int rowValue = board[i][j];
+                int colValue = board[j][i];
+
+                if (rowValue < 1 || rowValue > boardSize || rowCheck[rowValue]) {
+                    return false;
+                }
+                if (colValue < 1 || colValue > boardSize || colCheck[colValue]) {
+                    return false;
+                }
+                rowCheck[rowValue] = true;
+                colCheck[colValue] = true;
+            }
+        }
+        return true;
+    }
+
+    public static int[][] duplicateBoard(int[][] originalBoard) {
+        int[][] newBoard = new int[boardSize][boardSize];
+        for (int i = 0; i < boardSize; i++) {
+            System.arraycopy(originalBoard[i], 0, newBoard[i], 0, boardSize);
+        }
+        return newBoard;
+    }
+
+    private static void shuffleArray(int[] array, Random random) {
+        for (int i = array.length - 1; i > 0; i--) {
+            int index = random.nextInt(i + 1);
+            int temp = array[index];
+            array[index] = array[i];
+            array[i] = temp;
+        }
+    }
+}
